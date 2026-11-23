@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS ERP v4.4 - نظام إدارة الاشتراكات والعملاء</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: { cyber: { bg:'#030509', panel:'#080c14', border:'rgba(0, 243, 255, 0.25)', cyan:'#00f3ff', gold:'#ffd700', magenta:'#ff0055', red:'#ff2a6d', green:'#00ff9d', purple:'#9d00ff' } },
+                fontFamily: { cairo:['Cairo','sans-serif'], orbitron:['Orbitron','sans-serif'] }
+            }}
+        }
+    </script>
+    <style>
+        html {
+            min-height: 100%;
+            height: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family:'Cairo',sans-serif;
+            background-color:#030509;
+            color:#e2e8f0;
+            min-height:100vh;
+            height:auto;
+            overflow-x:hidden;
+            overflow-y:auto;
+            position:relative;
+            isolation:isolate;
+        }
+        /* Keep the animated background behind the interface without blocking scrolling or input. */
+        #waveCanvas {
+            position:fixed; top:0; left:0; width:100vw; height:100vh;
+            z-index:0; pointer-events:none;
+        }
+        .glass-panel { background:rgba(8,12,20,.78); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(0,243,255,.2); box-shadow:0 10px 40px 0 rgba(0,0,0,.8); }
+        .glass-panel-glow { background:rgba(10,15,26,.94); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px); border:1px solid rgba(0,243,255,.4); box-shadow:0 0 45px rgba(0,243,255,.18),inset 0 0 20px rgba(0,243,255,.05); }
+        /* Login-only frosted glass and flowing laser ribbons. */
+        #loginScreen { isolation:isolate; background:rgba(3,5,9,.48) !important; }
+        .login-laser-wave { position:absolute; inset:-35%; z-index:0; overflow:hidden; pointer-events:none; opacity:.82; }
+        .login-laser-wave::before, .login-laser-wave::after { content:""; position:absolute; width:150%; height:42%; left:-25%; border-radius:50%; filter:blur(1.5px); transform:rotate(-13deg); }
+        .login-laser-wave::before { top:18%; border-top:2px solid rgba(0,243,255,.8); box-shadow:0 -8px 24px rgba(0,243,255,.2), 0 -22px 42px rgba(0,243,255,.1); animation:laserFlowOne 10s ease-in-out infinite alternate; }
+        .login-laser-wave::after { top:48%; border-top:2px solid rgba(255,0,85,.7); box-shadow:0 -8px 24px rgba(255,0,85,.2), 0 -22px 42px rgba(157,0,255,.14); animation:laserFlowTwo 13s ease-in-out infinite alternate; }
+        .login-glass-panel { background:rgba(8,12,22,.48) !important; backdrop-filter:blur(30px) saturate(155%); -webkit-backdrop-filter:blur(30px) saturate(155%); border:1px solid rgba(135,245,255,.52); box-shadow:0 0 55px rgba(0,243,255,.18), 0 25px 80px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.13); }
+        .login-glass-panel input { background:rgba(0,0,0,.32) !important; }
+        @keyframes laserFlowOne { 0%{transform:translate3d(-3%,0,0) rotate(-13deg) scaleY(.85)} 100%{transform:translate3d(5%,16px,0) rotate(-7deg) scaleY(1.2)} }
+        @keyframes laserFlowTwo { 0%{transform:translate3d(4%,10px,0) rotate(-8deg) scaleY(1.1)} 100%{transform:translate3d(-5%,-14px,0) rotate(-15deg) scaleY(.8)} }
+        @media (prefers-reduced-motion: reduce) { .login-laser-wave::before,.login-laser-wave::after { animation:none; } }
+        .nexus-eagle{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 9px rgba(0,243,255,.45)) drop-shadow(0 0 7px rgba(255,23,68,.2));animation:eagleFloat 4.8s ease-in-out infinite;transform-origin:50% 55%}
+        .brand-stage{background:radial-gradient(circle at 32% 45%,rgba(0,243,255,.18),transparent 43%),radial-gradient(circle at 72% 62%,rgba(255,23,68,.16),transparent 45%),linear-gradient(145deg,rgba(7,20,38,.94),rgba(3,5,12,.88));box-shadow:0 0 28px rgba(0,243,255,.2),inset 0 0 22px rgba(255,255,255,.035);}
+        .brand-stage::before{content:'';position:absolute;inset:7px;border:1px solid rgba(255,215,0,.28);border-radius:inherit;clip-path:polygon(0 0,35% 0,35% 2%,65% 2%,65% 0,100% 0,100% 100%,0 100%);pointer-events:none}
+        .brand-wordmark{background:linear-gradient(100deg,#f7fbff 0%,#a9c8df 42%,#fff 52%,#ff405f 74%,#ff1744 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 20px rgba(0,243,255,.14)}
+        .brand-tagline{letter-spacing:.22em;text-shadow:0 0 12px rgba(0,243,255,.24)}
+        .nexus-eagle .wing-left{transform-origin:58px 48px;animation:wingLeft 5.2s ease-in-out infinite}
+        .nexus-eagle .wing-right{transform-origin:70px 48px;animation:wingRight 5.2s ease-in-out infinite}
+        .nexus-eagle .eagle-halo{transform-origin:64px 64px;animation:haloOrbit 16s linear infinite}
+        .nexus-eagle .eagle-eye{animation:eagleEye 2.8s ease-in-out infinite}
+        @keyframes eagleFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.015)}}
+        @keyframes wingLeft{0%,100%{transform:rotate(0)}50%{transform:rotate(-4.5deg)}}
+        @keyframes wingRight{0%,100%{transform:rotate(0)}50%{transform:rotate(4.5deg)}}
+        @keyframes haloOrbit{to{transform:rotate(360deg)}}
+        @keyframes eagleEye{0%,100%{opacity:.72;filter:drop-shadow(0 0 2px #ff1744)}50%{opacity:1;filter:drop-shadow(0 0 7px #ff1744)}}
+        .eagle-brand-mark{position:relative;isolation:isolate}
+        .eagle-brand-mark::after{content:"";position:absolute;inset:-5px;border:1px solid rgba(0,243,255,.28);border-radius:inherit;animation:eagleRing 3.8s ease-out infinite;pointer-events:none}
+        @keyframes eagleRing{0%{transform:scale(.88);opacity:.7}100%{transform:scale(1.38);opacity:0}}
+        @media (prefers-reduced-motion: reduce){.nexus-eagle,.nexus-eagle .wing-left,.nexus-eagle .wing-right,.nexus-eagle .eagle-halo,.nexus-eagle .eagle-eye,.eagle-brand-mark::after{animation:none!important}}
+        .scanlines { position:relative; }
+        .scanlines::after { content:" "; display:block; position:absolute; top:0; left:0; bottom:0; right:0; background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,.28) 50%),linear-gradient(90deg,rgba(255,0,0,.03),rgba(0,255,0,.01),rgba(0,0,255,.03)); z-index:2; background-size:100% 3px,6px 100%; pointer-events:none; }
+        .cyber-grid { background-image:linear-gradient(to right,rgba(0,243,255,.03) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,243,255,.03) 1px,transparent 1px); background-size:40px 40px; }
+        .glow-cyan { text-shadow:0 0 14px rgba(0,243,255,.85); } .glow-magenta { text-shadow:0 0 14px rgba(255,0,85,.85); } .glow-gold { text-shadow:0 0 14px rgba(255,215,0,.85); } .glow-green { text-shadow:0 0 14px rgba(0,255,157,.85); }
+        .border-glow-hover { transition:all .3s cubic-bezier(.4,0,.2,1); } .border-glow-hover:hover { border-color:rgba(0,243,255,.55); box-shadow:0 0 25px rgba(0,243,255,.25); transform:translateY(-2px); }
+        .pulse-green { box-shadow:0 0 0 0 rgba(0,255,157,.7); animation:pulseGreen 2s infinite; }
+        @keyframes pulseGreen { 0%{box-shadow:0 0 0 0 rgba(0,255,157,.7)} 70%{box-shadow:0 0 0 8px rgba(0,255,157,0)} 100%{box-shadow:0 0 0 0 rgba(0,255,157,0)} }
+        ::-webkit-scrollbar { width:8px; height:8px; } ::-webkit-scrollbar-track { background:#030509; } ::-webkit-scrollbar-thumb { background:#1a2333; border-radius:4px; } ::-webkit-scrollbar-thumb:hover { background:#00f3ff; }
+        /* Dialogs can scroll internally on short screens; page scrolling is restored when closed. */
+        .modal-scroll { overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+        body.modal-open { overflow:hidden; }
+        @media (max-height: 700px) {
+            #loginScreen { align-items:flex-start; overflow-y:auto; }
+            #loginScreen > .glass-panel-glow { margin-top:1rem; margin-bottom:1rem; }
+        }
+    </style>
+</head>
+<body class="cyber-grid min-h-screen selection:bg-cyber-cyan selection:text-black scanlines relative">
+    <canvas id="waveCanvas" aria-hidden="true"></canvas>
+
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#030509]/80 backdrop-blur-xl transition-all duration-700 overflow-y-auto">
+        <div class="login-laser-wave" aria-hidden="true"></div>
+        <div class="absolute w-[650px] h-[650px] rounded-full bg-cyber-cyan/15 blur-[160px] pointer-events-none top-1/4 left-1/4"></div>
+        <div class="absolute w-[550px] h-[550px] rounded-full bg-cyber-magenta/15 blur-[160px] pointer-events-none bottom-1/4 right-1/4"></div>
+        <div class="w-full max-w-md glass-panel-glow login-glass-panel rounded-3xl p-8 relative z-20 border border-cyber-cyan/50 shadow-[0_0_60px_rgba(0,243,255,0.25)]">
+            <div class="absolute -top-1 -left-1 w-6 h-6 border-t-2 border-l-2 border-cyber-cyan"></div>
+            <div class="absolute -top-1 -right-1 w-6 h-6 border-t-2 border-r-2 border-cyber-cyan"></div>
+            <div class="absolute -bottom-1 -left-1 w-6 h-6 border-b-2 border-l-2 border-cyber-cyan"></div>
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-2 border-r-2 border-cyber-cyan"></div>
+            <div class="text-center mb-8">
+                <div class="eagle-brand-mark brand-stage relative inline-flex items-center justify-center w-28 h-28 rounded-[1.65rem] border border-cyber-gold/60 mb-5 shadow-[0_0_40px_rgba(212,175,55,0.25)] p-2.5"><svg class="nexus-eagle" viewBox="0 0 128 128" role="img" aria-label="NEXUS Royal Eagle Emblem"><defs><linearGradient id="royalGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4c2"/><stop offset=".45" stop-color="#d7ad55"/><stop offset="1" stop-color="#80551b"/></linearGradient><linearGradient id="royalSilver" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#b7c5d4"/><stop offset="1" stop-color="#536579"/></linearGradient></defs><path d="M64 5 111 22 105 76Q96 108 64 123Q32 108 23 76L17 22Z" fill="#080d17" stroke="url(#royalGold)" stroke-width="3"/><path d="M64 13 102 27 97 74Q88 99 64 113Q40 99 31 74L26 27Z" fill="none" stroke="#8c6a32" stroke-width="1"/><path d="M58 46 13 31 29 50 8 49 35 67 20 69 51 81 61 66Z" fill="url(#royalGold)" stroke="#f5df9a" stroke-width="1.2"/><path d="M70 46 115 31 99 50 120 49 93 67 108 69 77 81 67 66Z" fill="url(#royalGold)" stroke="#f5df9a" stroke-width="1.2"/><path d="M64 25 48 48 53 73 64 91 75 73 80 48Z" fill="url(#royalSilver)" stroke="#fff" stroke-width="1.3"/><path d="M51 46 64 28 77 46 68 43 64 50 60 43Z" fill="#f4f1e8"/><path d="M67 40 91 44 76 56 66 51Z" fill="url(#royalGold)" stroke="#f7e3a8"/><path d="m76 54 16-2-10 10-10-3Z" fill="#d6a84c"/><path d="m68 48 8 2-7 4Z" fill="#a80f28"/><path d="M43 20 51 11 64 16 77 11 85 20 77 26 64 22 51 26Z" fill="url(#royalGold)" stroke="#fff0b7" stroke-width="1"/><circle cx="64" cy="16" r="3" fill="#fff4c2"/><path d="M48 91 64 99 80 91 72 108 64 113 56 108Z" fill="url(#royalGold)"/></svg></div>
+                <h1 class="font-orbitron text-3xl font-black tracking-widest brand-wordmark">NEXUS ERP</h1>
+                <p class="text-[10px] text-cyber-cyan/90 mt-2 font-mono brand-tagline uppercase">SMART BUSINESS MANAGEMENT</p>
+                <p class="text-xs text-gray-300 mt-2 tracking-wide">معاً نحو مستقبل رقمي أذكى</p>
+                <div class="flex items-center justify-center gap-2 mt-3 text-[9px] text-gray-400"><span class="w-8 h-px bg-cyber-cyan/60"></span><span>إدارة شاملة</span><span class="text-cyber-red">•</span><span>أمان عالٍ</span><span class="text-cyber-cyan">•</span><span>أداء فائق</span><span class="w-8 h-px bg-cyber-red/60"></span></div>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+                <div><label class="block text-xs font-mono text-cyber-cyan mb-2">اسم المستخدم / USERNAME</label><div class="relative"><span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400"><i class="fa-solid fa-shield-halved"></i></span><input type="text" id="loginUsername" required autocomplete="username" placeholder="أدخل اسم المستخدم" class="w-full bg-black/60 border border-cyber-border rounded-xl pr-10 pl-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-cyan transition font-mono text-sm"></div></div>
+                <div><label class="block text-xs font-mono text-cyber-cyan mb-2">كلمة المرور / PASSWORD</label><div class="relative"><span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400"><i class="fa-solid fa-lock"></i></span><input type="password" id="loginPassword" required autocomplete="current-password" placeholder="أدخل كلمة المرور" class="w-full bg-black/60 border border-cyber-border rounded-xl pr-10 pl-4 py-3.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-cyan transition font-mono text-sm"></div></div>
+                <div id="loginAlert" class="hidden p-3 rounded-xl bg-cyber-red/20 border border-cyber-red text-cyber-red text-xs text-center font-mono"><i class="fa-solid fa-triangle-exclamation ml-1"></i> اسم المستخدم أو كلمة المرور غير صحيحة!</div>
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-cyber-cyan via-blue-600 to-cyber-magenta text-black font-extrabold font-orbitron tracking-wider rounded-xl shadow-[0_0_30px_rgba(0,243,255,0.4)] hover:shadow-[0_0_50px_rgba(0,243,255,0.8)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"><i class="fa-solid fa-fingerprint ml-2 text-lg"></i> تسجيل الدخول</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden min-h-screen flex flex-col relative z-10">
+        <header class="glass-panel sticky top-0 z-40 border-b border-cyber-cyan/30 px-6 py-4">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <div class="eagle-brand-mark brand-stage relative inline-flex items-center justify-center w-16 h-16 rounded-2xl border border-cyber-gold/60 shadow-[0_0_25px_rgba(212,175,55,0.22)] p-1.5"><svg class="nexus-eagle" viewBox="0 0 128 128" role="img" aria-label="NEXUS Royal Eagle Emblem"><defs><linearGradient id="royalGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4c2"/><stop offset=".45" stop-color="#d7ad55"/><stop offset="1" stop-color="#80551b"/></linearGradient><linearGradient id="royalSilver" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#b7c5d4"/><stop offset="1" stop-color="#536579"/></linearGradient></defs><path d="M64 5 111 22 105 76Q96 108 64 123Q32 108 23 76L17 22Z" fill="#080d17" stroke="url(#royalGold)" stroke-width="3"/><path d="M64 13 102 27 97 74Q88 99 64 113Q40 99 31 74L26 27Z" fill="none" stroke="#8c6a32" stroke-width="1"/><path d="M58 46 13 31 29 50 8 49 35 67 20 69 51 81 61 66Z" fill="url(#royalGold)" stroke="#f5df9a" stroke-width="1.2"/><path d="M70 46 115 31 99 50 120 49 93 67 108 69 77 81 67 66Z" fill="url(#royalGold)" stroke="#f5df9a" stroke-width="1.2"/><path d="M64 25 48 48 53 73 64 91 75 73 80 48Z" fill="url(#royalSilver)" stroke="#fff" stroke-width="1.3"/><path d="M51 46 64 28 77 46 68 43 64 50 60 43Z" fill="#f4f1e8"/><path d="M67 40 91 44 76 56 66 51Z" fill="url(#royalGold)" stroke="#f7e3a8"/><path d="m76 54 16-2-10 10-10-3Z" fill="#d6a84c"/><path d="m68 48 8 2-7 4Z" fill="#a80f28"/><path d="M43 20 51 11 64 16 77 11 85 20 77 26 64 22 51 26Z" fill="url(#royalGold)" stroke="#fff0b7" stroke-width="1"/><circle cx="64" cy="16" r="3" fill="#fff4c2"/><path d="M48 91 64 99 80 91 72 108 64 113 56 108Z" fill="url(#royalGold)"/></svg></div>
+                    <div class="flex flex-col justify-center"><p class="text-xs sm:text-sm text-gray-300 font-semibold tracking-wide">منصة إدارة الأعمال والاشتراكات الذكية</p><p class="text-[10px] text-cyber-gold font-mono mt-1"><span id="liveClock" class="font-bold">00:00:00</span></p></div>
+                </div>
+                <div class="flex items-center space-x-3 space-x-reverse flex-wrap gap-y-2">
+                    <div class="hidden md:flex items-center space-x-2 space-x-reverse px-3.5 py-1.5 rounded-full bg-cyber-green/10 border border-cyber-green/30 text-cyber-green text-xs font-mono"><span class="w-2.5 h-2.5 rounded-full bg-cyber-green pulse-green"></span><span>بوابة الاتصال السحابي جاهزة</span></div>
+                    <button onclick="openModal('clientModal')" class="px-5 py-2.5 bg-gradient-to-r from-cyber-cyan to-blue-600 text-black font-extrabold rounded-xl text-xs sm:text-sm hover:shadow-[0_0_25px_rgba(0,243,255,0.5)] transition flex items-center gap-2"><i class="fa-solid fa-user-plus text-base"></i><span>إضافة زبون واشتراك جديد</span></button>
+                    <button id="adminManagementButton" onclick="openAdminManagement()" class="hidden px-4 py-2.5 bg-cyber-purple/15 border border-cyber-purple/40 text-purple-300 rounded-xl text-xs hover:bg-cyber-purple/25 transition flex items-center gap-2"><i class="fa-solid fa-user-shield"></i><span>إدارة الحسابات الإدارية</span></button>
+                    <button id="activityLogButton" onclick="openActivityLog()" class="hidden px-4 py-2.5 bg-white/5 border border-cyber-cyan/30 text-cyber-cyan rounded-xl text-xs hover:bg-cyber-cyan/10 transition flex items-center gap-2"><i class="fa-solid fa-clipboard-list"></i><span>سجل النظام</span></button>
+                    <button onclick="handleLogout()" class="p-2.5 text-gray-400 hover:text-cyber-red bg-white/5 hover:bg-cyber-red/10 border border-transparent hover:border-cyber-red/40 rounded-xl transition"><i class="fa-solid fa-power-off text-base"></i></button>
+                </div>
+            </div>
+        </header>
+        <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl border-glow-hover relative overflow-hidden group"><div class="absolute -right-4 -bottom-4 text-7xl text-cyber-cyan/5 group-hover:text-cyber-cyan/15 transition-all"><i class="fa-solid fa-users"></i></div><p class="text-xs font-mono text-gray-400">الاشتراكات النشطة</p><div class="flex items-baseline justify-between mt-3"><h3 id="statActive" class="text-4xl font-orbitron font-black text-white glow-cyan">0</h3><span class="text-xs text-cyber-green font-mono flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> مستقرة</span></div><div class="w-full bg-white/5 h-1.5 rounded-full mt-3 overflow-hidden"><div id="barActive" class="bg-cyber-cyan h-full transition-all duration-1000" style="width:0%"></div></div></div>
+                <div class="glass-panel p-5 rounded-2xl border-glow-hover relative overflow-hidden group"><div class="absolute -right-4 -bottom-4 text-7xl text-cyber-gold/5 group-hover:text-cyber-gold/15 transition-all"><i class="fa-solid fa-hourglass-half"></i></div><p class="text-xs font-mono text-gray-400">تنتهي قريباً (خلال 7 أيام)</p><div class="flex items-baseline justify-between mt-3"><h3 id="statExpiring" class="text-4xl font-orbitron font-black text-cyber-gold glow-gold">0</h3><span class="text-xs text-cyber-gold font-mono flex items-center gap-1"><i class="fa-solid fa-bell"></i> يحتاج تذكير</span></div><div class="w-full bg-white/5 h-1.5 rounded-full mt-3 overflow-hidden"><div id="barExpiring" class="bg-cyber-gold h-full transition-all duration-1000" style="width:0%"></div></div></div>
+                <div class="glass-panel p-5 rounded-2xl border-glow-hover relative overflow-hidden group"><div class="absolute -right-4 -bottom-4 text-7xl text-cyber-red/5 group-hover:text-cyber-red/15 transition-all"><i class="fa-solid fa-user-slash"></i></div><p class="text-xs font-mono text-gray-400">الاشتراكات المنتهية</p><div class="flex items-baseline justify-between mt-3"><h3 id="statExpired" class="text-4xl font-orbitron font-black text-cyber-red">0</h3><span class="text-xs text-cyber-red font-mono flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> متوقفة</span></div><div class="w-full bg-white/5 h-1.5 rounded-full mt-3 overflow-hidden"><div id="barExpired" class="bg-cyber-red h-full transition-all duration-1000" style="width:0%"></div></div></div>
+                <div class="glass-panel p-5 rounded-2xl border-glow-hover relative overflow-hidden group"><div class="absolute -right-4 -bottom-4 text-7xl text-cyber-green/5 group-hover:text-cyber-green/15 transition-all"><i class="fa-solid fa-money-bill-wave"></i></div><p class="text-xs font-mono text-gray-400">إجمالي دخل الاشتراكات (MRR)</p><div class="flex items-baseline justify-between mt-3"><h3 id="statMRR" class="text-3xl font-orbitron font-black text-cyber-green glow-green">$0</h3><span class="text-xs text-gray-400 font-mono">الإيراد الشهري</span></div><div class="w-full bg-white/5 h-1.5 rounded-full mt-3 overflow-hidden"><div class="bg-cyber-green h-full w-full"></div></div></div>
+            </div>
+            <div class="glass-panel p-6 rounded-2xl border border-cyber-cyan/20 space-y-4">
+                <div class="flex items-center justify-between border-b border-cyber-border/40 pb-3 gap-3 flex-wrap"><h3 class="font-orbitron text-base font-bold text-white flex items-center gap-2"><i class="fa-solid fa-chart-pie text-cyber-cyan"></i> نسبة توزيع المبيعات والدخل حسب الأنظمة</h3><span class="text-xs font-mono text-cyber-cyan bg-cyber-cyan/10 px-3 py-1 rounded-full border border-cyber-cyan/30">تحديث تلقائي</span></div>
+                <div id="systemsChart" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2"></div>
+            </div>
+            <div class="glass-panel p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 border border-cyber-cyan/20">
+                <div class="relative w-full md:w-96"><span class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400"><i class="fa-solid fa-magnifying-glass text-xs text-cyber-cyan"></i></span><input type="text" id="searchInput" oninput="renderData()" class="w-full bg-black/60 border border-cyber-border rounded-xl pr-10 pl-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyber-cyan transition font-mono" placeholder="بحث باسم الزبون، المحل، أو رقم الهاتف..."></div>
+                <div class="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto">
+                    <select id="productFilter" onchange="renderData()" class="bg-black/60 border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-cyber-cyan focus:outline-none focus:border-cyber-cyan font-mono"><option value="all">جميع الأنظمة المتاحة</option><option value="VOLTECH ERP">فولتيك (VOLTECH ERP)</option><option value="Auto & RealEstate Platform">منصة السيارات والعقارات</option><option value="POS Restaurant System">نظام المطاعم والكافيهات</option></select>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="setFilter('all')" id="filter-all" class="px-4 py-2 rounded-xl text-xs font-semibold transition bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan">الكل (<span id="count-all">0</span>)</button>
+                        <button onclick="setFilter('active')" id="filter-active" class="px-4 py-2 rounded-xl text-xs font-semibold transition bg-white/5 border border-transparent text-gray-400 hover:text-white">نشط (<span id="count-active">0</span>)</button>
+                        <button onclick="setFilter('expiring')" id="filter-expiring" class="px-4 py-2 rounded-xl text-xs font-semibold transition bg-white/5 border border-transparent text-gray-400 hover:text-white">قريب الانتهاء (<span id="count-expiring">0</span>)</button>
+                        <button onclick="setFilter('expired')" id="filter-expired" class="px-4 py-2 rounded-xl text-xs font-semibold transition bg-white/5 border border-transparent text-gray-400 hover:text-white">منتهي (<span id="count-expired">0</span>)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-panel rounded-2xl overflow-hidden border border-cyber-cyan/20"><div class="overflow-x-auto"><table class="w-full text-right text-xs"><thead class="bg-black/80 text-gray-400 font-mono uppercase text-[11px] border-b border-cyber-border"><tr><th class="px-5 py-4">الزبون والمحل</th><th class="px-5 py-4">النظام المخصص</th><th class="px-5 py-4">نوع الخطة</th><th class="px-5 py-4">سعر الاشتراك</th><th class="px-5 py-4">تاريخ الانتهاء</th><th class="px-5 py-4 text-center">حالة الاشتراك</th><th class="px-5 py-4 text-center">الإجراءات</th></tr></thead><tbody id="subscriptionsTableBody" class="divide-y divide-white/5 font-mono"></tbody></table></div><div id="emptyState" class="hidden text-center py-16 space-y-3"><i class="fa-solid fa-box-open text-5xl text-gray-600"></i><p class="text-sm text-gray-400 font-mono">لا توجد اشتراكات مطابقة لخيارات البحث</p></div></div>
+        </main>
+    </div>
+
+    <div id="clientModal" class="hidden fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto modal-scroll">
+        <div class="w-full max-w-xl glass-panel-glow rounded-3xl p-6 sm:p-8 relative border border-cyber-cyan/40 my-auto shadow-[0_0_50px_rgba(0,243,255,0.2)]">
+            <div class="flex items-center justify-between pb-4 border-b border-cyber-border mb-6 gap-3"><h3 id="modalTitle" class="font-orbitron text-lg font-bold text-white text-cyber-cyan flex items-center gap-2"><i class="fa-solid fa-user-pen"></i> إضافة زبون وااشتراك جديد</h3><button onclick="closeModal('clientModal')" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="clientForm" onsubmit="saveClient(event)" class="space-y-4"><input type="hidden" id="clientId">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-mono text-gray-300 mb-1.5">اسم صاحب العمل *</label><input type="text" id="clientName" required class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div><div><label class="block text-xs font-mono text-gray-300 mb-1.5">اسم المحل / الشركة *</label><input type="text" id="businessName" required class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-mono text-gray-300 mb-1.5">رقم الهاتف (واتساب) *</label><input type="text" id="clientPhone" placeholder="07700000000" required class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div><div><label class="block text-xs font-mono text-gray-300 mb-1.5">المحافظة / الموقع</label><input type="text" id="clientLocation" placeholder="بغداد - المنصور" class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-xs font-mono text-cyber-cyan mb-1.5">اختر النظام أو أضف نظاماً مخصصاً *</label><select id="productNameSelect" required onchange="handleProductSelectionChange()" class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"><option value="VOLTECH ERP">فولتيك (VOLTECH ERP)</option><option value="Auto & RealEstate Platform">منصة السيارات والعقارات</option><option value="POS Restaurant System">نظام المطاعم والكافيهات</option><option value="CUSTOM_OPTION">+ إضافة نظام مخصص جديد...</option></select></div><div><label class="block text-xs font-mono text-gray-300 mb-1.5">نوع الاشتراك *</label><select id="planType" required onchange="handlePlanTypeChange()" class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"><option value="monthly">شهري (Monthly)</option><option value="yearly">سنوي (Yearly)</option><option value="lifetime">مدى الحياة (Lifetime)</option><option value="test3">تجريبي - 3 أيام (TEST)</option><option value="test7">تجريبي - 7 أيام (TEST)</option></select></div></div>
+                <div id="customProductBox" class="hidden p-3.5 rounded-xl bg-cyber-cyan/10 border border-cyber-cyan/40 space-y-3"><p class="text-[11px] text-cyber-cyan font-mono flex items-center gap-1"><i class="fa-solid fa-plus-circle"></i> تحديد اسم نظام مخصص جديد:</p><input type="text" id="customProductName" placeholder="اكتب اسم النظام المخصص (مثال: نظام إدارة العيادات)" class="w-full bg-black/80 border border-cyber-border rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyber-cyan font-mono"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4"><div><label class="block text-xs font-mono text-cyber-gold mb-1.5">سعر الاشتراك ($) *</label><input type="number" id="subPrice" required min="0" step="5" value="25" class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div><div><label class="block text-xs font-mono text-gray-300 mb-1.5">تاريخ البدء *</label><input type="date" id="startDate" required onchange="calculateDates()" class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div><div><label class="block text-xs font-mono text-gray-300 mb-1.5">تاريخ الانتهاء *</label><input type="date" id="endDate" required class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></div></div>
+                <div><label class="block text-xs font-mono text-gray-300 mb-1.5">ملاحظات وشروط الاشتراك</label><textarea id="subNotes" rows="2" placeholder="تفاصيل الدفع، خصم مخصص، أو ملاحظات خاصة بالعميل..." class="w-full bg-black/60 border border-cyber-border rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyber-cyan"></textarea></div>
+                <div class="flex items-center justify-end space-x-3 space-x-reverse pt-4 border-t border-cyber-border"><button type="button" onclick="closeModal('clientModal')" class="px-5 py-2.5 bg-white/5 border border-transparent rounded-xl text-xs text-gray-300 hover:bg-white/10">إلغاء</button><button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-cyber-cyan to-blue-600 text-black font-extrabold rounded-xl text-xs hover:shadow-[0_0_20px_rgba(0,243,255,0.5)]">حفظ البيانات</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="adminManagementModal" class="hidden fixed inset-0 z-[80] flex items-start justify-center p-3 sm:p-5 bg-black/90 backdrop-blur-md overflow-y-auto modal-scroll">
+      <div class="glass-panel-glow w-full max-w-4xl rounded-2xl p-5 sm:p-7 border border-cyber-purple/50 my-auto">
+        <div class="flex items-center justify-between gap-3 border-b border-cyber-border pb-4 mb-5">
+          <div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-user-shield text-purple-300 ml-2"></i>مركز مسؤول النظام</h3><p class="text-xs text-gray-400 mt-1">إنشاء حسابات إدارية مستقلة ومتابعة صلاحياتها</p></div>
+          <button onclick="closeModal('adminManagementModal')" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <form id="adminAccountForm" onsubmit="saveAdminAccount(event)" class="space-y-3 p-4 rounded-xl bg-black/30 border border-cyber-purple/30">
+            <h4 class="text-sm font-bold text-purple-200 mb-2">إضافة حساب إداري</h4>
+            <div><label class="block text-xs text-gray-300 mb-1">الاسم الظاهر</label><input id="newAdminName" required class="w-full bg-black/60 border border-cyber-border rounded-lg px-3 py-2.5 text-xs text-white" placeholder="اسم المسؤول"></div>
+            <div><label class="block text-xs text-gray-300 mb-1">اسم المستخدم</label><input id="newAdminUsername" required autocomplete="off" class="w-full bg-black/60 border border-cyber-border rounded-lg px-3 py-2.5 text-xs text-white" placeholder="username"></div>
+            <div><label class="block text-xs text-gray-300 mb-1">كلمة المرور</label><input id="newAdminPassword" type="password" required minlength="6" autocomplete="new-password" class="w-full bg-black/60 border border-cyber-border rounded-lg px-3 py-2.5 text-xs text-white" placeholder="6 أحرف على الأقل"></div>
+            <button class="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyber-cyan to-blue-600 text-black text-xs font-bold"><i class="fa-solid fa-user-plus ml-1"></i>إنشاء الحساب الإداري</button>
+            <p class="text-[10px] text-gray-500 leading-5">تُحفظ الحسابات على الخادم عبر اتصال NEXUS الآمن.</p>
+          </form>
+          <div class="p-4 rounded-xl bg-black/30 border border-cyber-cyan/20">
+            <h4 class="text-sm font-bold text-cyber-cyan mb-3">الحسابات الإدارية المسجلة</h4>
+            <div id="adminAccountsList" class="space-y-2 text-xs"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+        // Background animation: keep lightweight and never intercept page interaction.
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        let step = 0, animationFrame = null;
+        function resizeCanvas() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(window.innerWidth * dpr);
+            canvas.height = Math.floor(window.innerHeight * dpr);
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas, { passive:true });
+        resizeCanvas();
+        function animateWaveLaser() {
+            const w = window.innerWidth, h = window.innerHeight;
+            ctx.clearRect(0, 0, w, h);
+            step += 0.025;
+            for (let i = 0; i < 14; i++) {
+                ctx.beginPath();
+                ctx.lineWidth = (i % 2 === 0) ? 1.5 : 0.8;
+                if (i % 3 === 0) ctx.strokeStyle = `rgba(0,243,255,${0.15 + (i / 14) * 0.25})`;
+                else if (i % 3 === 1) ctx.strokeStyle = `rgba(255,0,85,${0.12 + (i / 14) * 0.25})`;
+                else ctx.strokeStyle = `rgba(157,0,255,${0.12 + (i / 14) * 0.2})`;
+                for (let x = -50; x < w + 50; x += 15) {
+                    const y = h / 2 + Math.sin(x * 0.004 + step + i * 0.35) * (90 + i * 12) + Math.cos(x * 0.008 - step * 0.8) * 45 + Math.sin(step + i) * 30;
+                    if (x === -50) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            animationFrame = requestAnimationFrame(animateWaveLaser);
+        }
+        animateWaveLaser();
+
+        function updateClock() {
+            const now = new Date();
+            const clockEl = document.getElementById('liveClock');
+            if (clockEl) clockEl.innerText = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2,'0')).join(':');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        function getOffsetDate(daysOffset) {
+            const d = new Date(); d.setDate(d.getDate() + daysOffset);
+            const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+            return local.toISOString().split('T')[0];
+        }
+        // NEXUS cloud connection: all authentication and staff administration go through the deployed Edge Function.
+        // No service-role key is stored in this browser file.
+        const NEXUS_API_URL = 'https://bwclgarkmgaczdxhlceb.supabase.co/functions/v1/nexus-api';
+        const NEXUS_SUPABASE_URL = 'https://bwclgarkmgaczdxhlceb.supabase.co';
+        const NEXUS_PUBLISHABLE_KEY = 'sb_publishable_E6enhyB5wqzVsq7fO4255g_bd2w8PSz';
+        let nexusCloudReady = false;
+        let nexusCloudBusy = false;
+        async function nexusClientsRequest(path, options = {}) {
+            const token = sessionStorage.getItem('nexus_access_token');
+            if (!token) throw new Error('جلسة الدخول غير صالحة. سجل الدخول مجدداً.');
+            const response = await fetch(`${NEXUS_SUPABASE_URL}/rest/v1/${path}`, {
+                ...options,
+                headers: { apikey:NEXUS_PUBLISHABLE_KEY, Authorization:`Bearer ${token}`, 'Content-Type':'application/json', ...(options.headers||{}) }
+            });
+            const bodyText = await response.text();
+            let body = null;
+            try { body = bodyText ? JSON.parse(bodyText) : null; } catch (_) { body = bodyText; }
+            if (!response.ok) {
+                const msg = body && (body.message || body.msg || body.error_description || body.hint) || `HTTP ${response.status}`;
+                throw new Error(`تعذر تنفيذ العملية السحابية: ${msg}`);
+            }
+            return body;
+        }
+        function normalizeCloudClient(row) { return { ...(row.data || {}), id:String(row.id) }; }
+        async function loadCloudClients() {
+            if (nexusCloudBusy) return;
+            nexusCloudBusy = true;
+            try {
+                const rows = await nexusClientsRequest('nexus_clients?select=id,data,created_at,updated_at&order=created_at.desc');
+                // Keep the pre-cloud browser data as a separate local safety copy; never upload it automatically.
+                const oldLocal = localStorage.getItem('nexus_clients_v4');
+                if (oldLocal && !localStorage.getItem('nexus_clients_local_backup_v4')) localStorage.setItem('nexus_clients_local_backup_v4', oldLocal);
+                clients = Array.isArray(rows) ? rows.map(normalizeCloudClient) : [];
+                localStorage.setItem('nexus_clients_v4', JSON.stringify(clients));
+                nexusCloudReady = true;
+                return true;
+            } catch (error) {
+                nexusCloudReady = false;
+                console.error('NEXUS cloud clients load:', error);
+                alert(`تعذر تحميل بيانات الزبائن من السحابة. لم يتم تعديل البيانات المحلية.\n${error.message}`);
+                return false;
+            } finally { nexusCloudBusy = false; }
+        }
+        async function saveCloudClient(client, isNew) {
+            const data = { ...client }; delete data.id;
+            const now = new Date().toISOString();
+            if (isNew) {
+                const rows = await nexusClientsRequest('nexus_clients', { method:'POST', headers:{ Prefer:'return=representation' }, body:JSON.stringify({ id:String(client.id), data, created_at:now, updated_at:now }) });
+                if (!Array.isArray(rows) || !rows.length) throw new Error('لم يؤكد الخادم حفظ الزبون.');
+                return normalizeCloudClient(rows[0]);
+            }
+            const rows = await nexusClientsRequest(`nexus_clients?id=eq.${encodeURIComponent(String(client.id))}`, { method:'PATCH', headers:{ Prefer:'return=representation' }, body:JSON.stringify({ data, updated_at:now }) });
+            if (!Array.isArray(rows) || !rows.length) throw new Error('لم يتم العثور على الزبون لتحديثه، أو لا تملك صلاحية التعديل.');
+            return normalizeCloudClient(rows[0]);
+        }
+        async function updateCloudClient(client) {
+            const data = { ...client }; delete data.id;
+            const rows = await nexusClientsRequest(`nexus_clients?id=eq.${encodeURIComponent(String(client.id))}`, { method:'PATCH', headers:{ Prefer:'return=representation' }, body:JSON.stringify({ data, updated_at:new Date().toISOString() }) });
+            if (!Array.isArray(rows) || !rows.length) throw new Error('تعذر تحديث الاشتراك في السحابة.');
+            return normalizeCloudClient(rows[0]);
+        }
+        let nexusCurrentUser = null;
+        let remoteEmployees = [];
+        function normalizeNexusRole(role) {
+            if (role === 'super_admin' || role === 'superadmin') return 'superadmin';
+            return role || 'member';
+        }
+        function clearNexusSession() {
+            ['nexus_authenticated','nexus_role','nexus_actor','nexus_access_token','nexus_refresh_token','nexus_expires_at','nexus_user'].forEach(k => sessionStorage.removeItem(k));
+            nexusCurrentUser = null;
+        }
+        async function nexusApi(action, payload = {}, token = sessionStorage.getItem('nexus_access_token')) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers.Authorization = `Bearer ${token}`;
+            let response;
+            try {
+                response = await fetch(NEXUS_API_URL, { method:'POST', headers, body:JSON.stringify({ action, ...payload }) });
+            } catch (error) {
+                throw new Error('تعذر الاتصال بخادم NEXUS. تحقق من الإنترنت ثم حاول مجدداً.');
+            }
+            let result;
+            try { result = await response.json(); }
+            catch (_) { throw new Error(`استجابة غير مفهومة من الخادم (HTTP ${response.status}).`); }
+            if (!response.ok || result.success === false) throw new Error(result.message || `فشل الطلب (HTTP ${response.status}).`);
+            return result;
+        }
+        function saveNexusSession(result) {
+            const user = result.user || {};
+            sessionStorage.setItem('nexus_access_token', result.access_token || '');
+            if (result.refresh_token) sessionStorage.setItem('nexus_refresh_token', result.refresh_token);
+            if (result.expires_at) sessionStorage.setItem('nexus_expires_at', String(result.expires_at));
+            sessionStorage.setItem('nexus_user', JSON.stringify(user));
+            sessionStorage.setItem('nexus_authenticated', 'true');
+            sessionStorage.setItem('nexus_role', normalizeNexusRole(user.role));
+            sessionStorage.setItem('nexus_actor', user.display_name || user.username || 'مستخدم NEXUS');
+            nexusCurrentUser = user;
+        }
+        async function restoreNexusSession() {
+            const token = sessionStorage.getItem('nexus_access_token');
+            if (!token) { clearNexusSession(); return false; }
+            try {
+                const result = await nexusApi('me', {}, token);
+                if (!result.user || result.user.active === false) throw new Error('الحساب غير فعال.');
+                const old = { access_token:token, refresh_token:sessionStorage.getItem('nexus_refresh_token'), expires_at:sessionStorage.getItem('nexus_expires_at'), user:result.user };
+                saveNexusSession(old);
+                return true;
+            } catch (_) {
+                clearNexusSession();
+                return false;
+            }
+        }
+
+        const initialClients = [
+            {id:'1',clientName:'أحمد العبيدي',businessName:'مركز الفرسان للهواتف',phone:'07701234567',location:'بغداد - شارع الربيعي',productName:'VOLTECH ERP',planType:'monthly',price:35,startDate:getOffsetDate(-20),endDate:getOffsetDate(10),notes:'تم التسليم والدفع كاش'},
+            {id:'2',clientName:'حسين الساعدي',businessName:'معرض البصرة للسيارات والعقارات',phone:'07809876543',location:'البصرة - الجزائر',productName:'Auto & RealEstate Platform',planType:'yearly',price:300,startDate:getOffsetDate(-355),endDate:getOffsetDate(4),notes:'اشتراك سنوي يحتاج تذكير'},
+            {id:'3',clientName:'عمر الفاروق',businessName:'كافيه دبي ستايل',phone:'07501122334',location:'أربيل - العرصات',productName:'POS Restaurant System',planType:'monthly',price:30,startDate:getOffsetDate(-45),endDate:getOffsetDate(-15),notes:'تأخير بالدفع'}
+        ];
+        let clients = JSON.parse(localStorage.getItem('nexus_clients_v4')) || initialClients;
+        let currentFilter = 'all';
+
+        window.addEventListener('load', async function() {
+            document.getElementById('startDate').value = getOffsetDate(0);
+            calculateDates();
+            const restored = await restoreNexusSession();
+            if (restored) showDashboard();
+        });
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('loginUsername').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            const alertEl = document.getElementById('loginAlert');
+            const submitButton = document.querySelector('#loginForm button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-60');
+            try {
+                const result = await nexusApi('login', { username:user, password:pass }, null);
+                if (!result.access_token || !result.user) throw new Error('استجابة تسجيل الدخول لا تحتوي على جلسة صالحة.');
+                saveNexusSession(result);
+                logActivity('login', null, 'تسجيل دخول ناجح إلى النظام');
+                alertEl.classList.add('hidden');
+                showDashboard();
+            } catch (error) {
+                alertEl.textContent = error.message || 'تعذر تسجيل الدخول. تحقق من البيانات.';
+                alertEl.classList.remove('hidden');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-60');
+            }
+        }
+        function hasAdminHistoryAccess(){const role=normalizeNexusRole(sessionStorage.getItem('nexus_role'));return role==='admin'||role==='superadmin'}
+        function isNexusSuperAdmin(){return normalizeNexusRole(sessionStorage.getItem('nexus_role'))==='superadmin'}
+        function showDashboard() {
+            document.getElementById('adminManagementButton').classList.toggle('hidden',sessionStorage.getItem('nexus_role')!=='superadmin');
+            document.getElementById('activityLogButton').classList.toggle('hidden',!hasAdminHistoryAccess());
+            const login = document.getElementById('loginScreen');
+            login.classList.add('opacity-0','pointer-events-none');
+            setTimeout(async () => {
+                login.classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                await loadCloudClients();
+                renderData();
+                window.scrollTo({top:0,behavior:'auto'});
+            }, 450);
+        }
+        function handleLogout() { logActivity('logout', null, 'تسجيل خروج من النظام'); clearNexusSession(); location.reload(); }
+        function handleProductSelectionChange() {
+            const val = document.getElementById('productNameSelect').value;
+            const box = document.getElementById('customProductBox');
+            if (val === 'CUSTOM_OPTION') box.classList.remove('hidden'); else box.classList.add('hidden');
+        }
+        function getStatusInfo(endDateStr) {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const exp = new Date(endDateStr + 'T00:00:00'); exp.setHours(0,0,0,0);
+            const diffDays = Math.ceil((exp - today) / 86400000);
+            if (diffDays < 0) return {key:'expired',label:'منتهي',class:'text-cyber-red bg-cyber-red/10 border-cyber-red/30'};
+            if (diffDays <= 7) return {key:'expiring',label:`باقي ${diffDays} يوم`,class:'text-cyber-gold bg-cyber-gold/10 border-cyber-gold/30'};
+            return {key:'active',label:'نشط',class:'text-cyber-green bg-cyber-green/10 border-cyber-green/30'};
+        }
+        function renderData() {
+            const tbody = document.getElementById('subscriptionsTableBody');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const productFilterVal = document.getElementById('productFilter').value;
+            tbody.innerHTML = '';
+            let activeCount=0, expiringCount=0, expiredCount=0, totalMRR=0, productStats={};
+            const filteredClients = clients.filter(client => {
+                const status = getStatusInfo(client.endDate).key;
+                if (status==='active') activeCount++;
+                if (status==='expiring') expiringCount++;
+                if (status==='expired') expiredCount++;
+                if (status!=='expired') totalMRR += Number(client.price || 0);
+                productStats[client.productName] = (productStats[client.productName] || 0) + Number(client.price || 0);
+                const matchesSearch = (client.clientName||'').toLowerCase().includes(searchVal) || (client.businessName||'').toLowerCase().includes(searchVal) || (client.productName||'').toLowerCase().includes(searchVal) || (client.phone||'').includes(searchVal);
+                return matchesSearch && (currentFilter==='all' || status===currentFilter) && (productFilterVal==='all' || client.productName===productFilterVal);
+            });
+            document.getElementById('statActive').innerText=activeCount;
+            document.getElementById('statExpiring').innerText=expiringCount;
+            document.getElementById('statExpired').innerText=expiredCount;
+            document.getElementById('statMRR').innerText=`$${totalMRR.toLocaleString()}`;
+            const totalAll=clients.length||1;
+            document.getElementById('barActive').style.width=`${activeCount/totalAll*100}%`;
+            document.getElementById('barExpiring').style.width=`${expiringCount/totalAll*100}%`;
+            document.getElementById('barExpired').style.width=`${expiredCount/totalAll*100}%`;
+            document.getElementById('count-all').innerText=clients.length;
+            document.getElementById('count-active').innerText=activeCount;
+            document.getElementById('count-expiring').innerText=expiringCount;
+            document.getElementById('count-expired').innerText=expiredCount;
+            const chart=document.getElementById('systemsChart'); chart.innerHTML='';
+            Object.keys(productStats).forEach(prodName => {
+                const amount=productStats[prodName], percentage=Math.round(amount/(totalMRR||1)*100);
+                chart.innerHTML += `<div class="glass-panel p-3.5 rounded-xl border border-cyber-cyan/20"><div class="flex justify-between items-center text-xs font-mono mb-2 gap-2"><span class="text-gray-200 font-bold"><i class="fa-solid fa-cube text-cyber-cyan ml-1.5"></i>${escapeHTML(prodName)}</span><span class="text-cyber-green font-bold whitespace-nowrap">$${amount} (${percentage}%)</span></div><div class="w-full bg-white/5 h-2 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-cyber-cyan to-blue-600 h-full" style="width:${percentage}%"></div></div></div>`;
+            });
+            const empty=document.getElementById('emptyState');
+            if (!filteredClients.length) empty.classList.remove('hidden'); else empty.classList.add('hidden');
+            filteredClients.forEach(c => {
+                const statusInfo=getStatusInfo(c.endDate), formattedPhone=(c.phone||'').replace(/[^0-9]/g,'');
+                const waMessage=encodeURIComponent(`مرحباً ${c.clientName}، نود تذكيركم بقرب انتهاء اشتراك نظام (${c.productName}) بتاريخ ${c.endDate}. يرجى التواصل معنا للتجديد لضمان استمرار الخدمة.`);
+                const waUrl=`https://wa.me/964${formattedPhone.startsWith('0')?formattedPhone.substring(1):formattedPhone}?text=${waMessage}`;
+                const tr=document.createElement('tr'); tr.className='hover:bg-white/5 transition border-b border-cyber-border/40';
+                const clientTitle=hasAdminHistoryAccess()?`<button type="button" onclick="openSubscriptionHistory('${String(c.id).replace(/'/g, '')}')" class="font-bold text-white text-sm text-right hover:text-cyber-cyan transition underline decoration-dotted underline-offset-4">${escapeHTML(c.businessName || c.clientName)}</button>`:`<span class="font-bold text-white text-sm">${escapeHTML(c.businessName || c.clientName)}</span>`;
+                tr.innerHTML=`<td class="px-5 py-4">${clientTitle}<div class="text-[11px] text-gray-400"><i class="fa-solid fa-user text-cyber-cyan/70 ml-1"></i>${escapeHTML(c.clientName)} | ${escapeHTML(c.location||'غير محدد')}</div></td>
+                <td class="px-5 py-4"><span class="px-2.5 py-1 rounded-md text-[11px] bg-cyber-cyan/10 border border-cyber-cyan/30 text-cyber-cyan font-bold">${escapeHTML(c.productName)}</span></td>
+                <td class="px-5 py-4"><span class="text-gray-300">${c.planType==='monthly'?'شهري':c.planType==='yearly'?'سنوي':c.planType==='lifetime'?'مدى الحياة':c.planType==='test3'?'تجريبي 3 أيام':c.planType==='test7'?'تجريبي 7 أيام':'—'}</span></td>
+                <td class="px-5 py-4 font-bold text-cyber-gold text-sm">$${Number(c.price||0)}</td><td class="px-5 py-4 text-gray-300">${escapeHTML(c.endDate)}</td>
+                <td class="px-5 py-4 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-bold border ${statusInfo.class}">${statusInfo.label}</span></td>
+                <td class="px-5 py-4 text-center"><div class="flex items-center justify-center space-x-2 space-x-reverse">
+                <a href="${waUrl}" target="_blank" rel="noopener noreferrer" title="تذكير بقرب انتهاء الاشتراك" class="p-2 text-cyber-green hover:bg-cyber-green/20 rounded-xl transition border border-cyber-green/30"><i class="fa-brands fa-whatsapp text-sm"></i></a>
+                <button onclick="renewSubscription('${String(c.id).replace(/'/g,'')}')" title="تجديد شهر إضافي" aria-label="تجديد شهر إضافي" class="p-2 text-cyber-cyan hover:bg-cyber-cyan/20 rounded-xl transition border border-cyber-cyan/30"><i class="fa-solid fa-rotate-right text-sm"></i></button>
+                <button onclick="printRenewalReceipt('${String(c.id).replace(/'/g,'')}')" title="طباعة وصل التجديد" aria-label="طباعة وصل التجديد" class="p-2 text-cyber-gold hover:bg-cyber-gold/20 rounded-xl transition border border-cyber-gold/30"><i class="fa-solid fa-receipt text-sm"></i></button>
+                <button onclick="decreaseSubscription('${String(c.id).replace(/'/g,'')}')" title="تقليل الاشتراك شهر واحد" aria-label="تقليل الاشتراك شهر واحد" class="p-2 text-cyber-gold hover:bg-cyber-gold/20 rounded-xl transition border border-cyber-gold/30"><i class="fa-solid fa-calendar-minus text-sm"></i></button>
+                ${String(c.planType||'').startsWith('test')?'<button onclick="cancelTestSubscription(\''+String(c.id).replace(/'/g,'')+'\')" title="إلغاء الاشتراك التجريبي" class="p-2 text-cyber-red hover:bg-cyber-red/20 rounded-xl transition border border-cyber-red/30"><i class="fa-solid fa-ban text-sm"></i></button>':''}
+                <button onclick="editClient('${String(c.id).replace(/'/g,'')}')" title="تعديل البيانات" class="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition"><i class="fa-solid fa-pen-to-square text-sm"></i></button>
+                <button onclick="deleteClient('${String(c.id).replace(/'/g,'')}')" title="حذف" class="p-2 text-cyber-red hover:bg-cyber-red/20 rounded-xl transition"><i class="fa-solid fa-trash-can text-sm"></i></button></div></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+
+        const ACTIVITY_KEY = 'nexus_activity_log_v4';
+        function readActivityLog(){try{const v=JSON.parse(localStorage.getItem(ACTIVITY_KEY)||'[]');return Array.isArray(v)?v:[]}catch(_){return[]}}
+        function writeActivityLog(items){localStorage.setItem(ACTIVITY_KEY,JSON.stringify(items.slice(-5000)))}
+        function logActivity(action,client,details,beforeValue='',afterValue=''){
+          const item={id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),timestamp:new Date().toISOString(),action,clientId:client?String(client.id):'',clientName:client?(client.businessName||client.clientName||''):'',details:String(details||''),beforeValue:String(beforeValue||''),afterValue:String(afterValue||''),actor:(sessionStorage.getItem('nexus_actor')||'مسؤول النظام')};
+          const all=readActivityLog();all.push(item);writeActivityLog(all);return item;
+        }
+        function formatTimestamp(value){const d=new Date(value);return Number.isNaN(d.getTime())?String(value||'—'):d.toLocaleString('ar-IQ',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}
+        function actionLabel(a){return({login:'تسجيل الدخول',logout:'تسجيل الخروج',add:'إضافة زبون',edit:'تعديل بيانات',delete:'حذف زبون',renew:'تجديد اشتراك',decrease:'تقليل اشتراك',view_history:'عرض سجل اشتراك',cancel_trial:'إلغاء اشتراك تجريبي'})[a]||a||'إجراء'}
+        function openSubscriptionHistory(id){
+          if(!hasAdminHistoryAccess()){alert('سجل الاشتراك متاح لحساب المسؤول فقط.');return;}
+          const c=clients.find(x=>String(x.id)===String(id));if(!c)return;
+          logActivity('view_history',c,'فتح سجل تجديد الاشتراك');
+          const events=readActivityLog().filter(e=>e.clientId===String(id)&&['renew','decrease'].includes(e.action)).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+          document.getElementById('historyClientLabel').textContent=`${c.businessName||c.clientName} — ${c.productName||''}`;
+          const body=document.getElementById('subscriptionHistoryBody');body.innerHTML='';
+          events.forEach(e=>{const tr=document.createElement('tr');tr.className='border-b border-cyber-border/40 hover:bg-white/5';tr.innerHTML=`<td class="p-3 text-white">${escapeHTML(actionLabel(e.action))}</td><td class="p-3 text-gray-300 whitespace-nowrap">${escapeHTML(formatTimestamp(e.timestamp))}</td><td class="p-3 text-gray-400">${escapeHTML(e.beforeValue||'—')}</td><td class="p-3 text-cyber-green">${escapeHTML(e.afterValue||'—')}</td><td class="p-3 text-gray-300">${escapeHTML(e.actor||'admin')}</td>`;body.appendChild(tr)});
+          document.getElementById('historyEmpty').classList.toggle('hidden',events.length>0);openModal('historyModal');
+        }
+        function openActivityLog(){if(!hasAdminHistoryAccess()){alert('سجل النظام متاح لحساب المسؤول فقط.');return;}renderActivityLog();openModal('activityLogModal')}
+        function renderActivityLog(){if(!hasAdminHistoryAccess())return;
+          const search=(document.getElementById('logSearch')?.value||'').trim().toLowerCase(),action=document.getElementById('logActionFilter')?.value||'all',from=document.getElementById('logFromDate')?.value||'',to=document.getElementById('logToDate')?.value||'';
+          const events=readActivityLog().slice().sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)).filter(e=>{const day=String(e.timestamp||'').slice(0,10),hay=[actionLabel(e.action),e.clientName,e.details,e.actor,e.beforeValue,e.afterValue].join(' ').toLowerCase();return(action==='all'||e.action===action)&&(!from||day>=from)&&(!to||day<=to)&&(!search||hay.includes(search))});
+          const body=document.getElementById('activityLogBody');body.innerHTML='';events.forEach(e=>{const tr=document.createElement('tr');tr.className='border-b border-cyber-border/40 hover:bg-white/5';tr.innerHTML=`<td class="p-3 text-gray-300 whitespace-nowrap">${escapeHTML(formatTimestamp(e.timestamp))}</td><td class="p-3 text-cyber-cyan">${escapeHTML(actionLabel(e.action))}</td><td class="p-3 text-white">${escapeHTML(e.clientName||'—')}</td><td class="p-3 text-gray-300">${escapeHTML(e.details||'—')}</td><td class="p-3 text-gray-400">${escapeHTML(e.actor||'admin')}</td>`;body.appendChild(tr)});
+          document.getElementById('logCount').textContent=`عدد الإجراءات: ${events.length}`;document.getElementById('logEmpty').classList.toggle('hidden',events.length>0);
+        }
+        function clearActivityFilters(){if(!hasAdminHistoryAccess())return;['logSearch','logFromDate','logToDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});const a=document.getElementById('logActionFilter');if(a)a.value='all';renderActivityLog()}
+
+        function setFilter(filterKey) {
+            currentFilter=filterKey;
+            ['all','active','expiring','expired'].forEach(f => {
+                const btn=document.getElementById(`filter-${f}`);
+                btn.className=f===filterKey?'px-4 py-2 rounded-xl text-xs font-semibold transition bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan':'px-4 py-2 rounded-xl text-xs font-semibold transition bg-white/5 border border-transparent text-gray-400 hover:text-white';
+            });
+            renderData();
+        }
+        function handlePlanTypeChange() {
+            const plan=document.getElementById('planType').value;
+            if(plan==='test3'||plan==='test7') document.getElementById('subPrice').value=0;
+            calculateDates();
+        }
+        function calculateDates() {
+            const startDateVal=document.getElementById('startDate').value, planType=document.getElementById('planType').value;
+            if (!startDateVal) return;
+            const parts=startDateVal.split('-').map(Number);
+            const startObj=new Date(parts[0],parts[1]-1,parts[2]);
+            if(planType==='monthly') startObj.setMonth(startObj.getMonth()+1);
+            else if(planType==='yearly') startObj.setFullYear(startObj.getFullYear()+1);
+            else if(planType==='lifetime') startObj.setFullYear(startObj.getFullYear()+10);
+            else if(planType==='test3') startObj.setDate(startObj.getDate()+3);
+            else if(planType==='test7') startObj.setDate(startObj.getDate()+7);
+            document.getElementById('endDate').value=getLocalDateString(startObj);
+        }
+        function getLocalDateString(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+        // Customer records are stored in Supabase; the browser copy remains a cache/backup.
+        async function saveClient(e) {
+            e.preventDefault();
+            const id=document.getElementById('clientId').value;
+            const existing=id?clients.find(c=>String(c.id)===String(id)):null;
+            const oldSummary=existing?`${existing.clientName||''} | ${existing.businessName||''} | انتهاء: ${existing.endDate||'—'}`:'';
+            let selectedProduct=document.getElementById('productNameSelect').value;
+            if(selectedProduct==='CUSTOM_OPTION')selectedProduct=document.getElementById('customProductName').value.trim()||'نظام مخصص';
+            const clientData={id:id||Date.now().toString(),clientName:document.getElementById('clientName').value.trim(),businessName:document.getElementById('businessName').value.trim(),phone:document.getElementById('clientPhone').value.trim(),location:document.getElementById('clientLocation').value.trim(),productName:selectedProduct,planType:document.getElementById('planType').value,price:(['test3','test7'].includes(document.getElementById('planType').value)?0:Number(document.getElementById('subPrice').value)),startDate:document.getElementById('startDate').value,endDate:document.getElementById('endDate').value,notes:document.getElementById('subNotes').value.trim(),subscriptionStatus:'active',trialCancelled:false};
+            const isNew = !id;
+            try {
+                const saved = await saveCloudClient(clientData, isNew);
+                if(isNew) clients.unshift(saved);
+                else { const i=clients.findIndex(c=>String(c.id)===String(id)); if(i!==-1) clients[i]=saved; else clients.unshift(saved); }
+                if(isNew) logActivity('add',saved,'إضافة زبون واشتراك جديد','',`${saved.clientName} | ${saved.businessName} | انتهاء: ${saved.endDate}`);
+                else logActivity('edit',saved,'تعديل بيانات الزبون/الاشتراك',oldSummary,`${saved.clientName} | ${saved.businessName} | انتهاء: ${saved.endDate}`);
+                localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));closeModal('clientModal');renderData();
+            } catch(error) { alert(error.message || 'تعذر حفظ بيانات الزبون في السحابة.'); }
+        }
+        function editClient(id) {
+            const client=clients.find(c=>c.id===id); if(!client)return;
+            document.getElementById('clientId').value=client.id;
+            document.getElementById('clientName').value=client.clientName||'';
+            document.getElementById('businessName').value=client.businessName||'';
+            document.getElementById('clientPhone').value=client.phone||'';
+            document.getElementById('clientLocation').value=client.location||'';
+            const select=document.getElementById('productNameSelect'), box=document.getElementById('customProductBox');
+            if(['VOLTECH ERP','Auto & RealEstate Platform','POS Restaurant System'].includes(client.productName)){select.value=client.productName;box.classList.add('hidden');}
+            else{select.value='CUSTOM_OPTION';box.classList.remove('hidden');document.getElementById('customProductName').value=client.productName;}
+            document.getElementById('planType').value=client.planType||'monthly';
+            document.getElementById('subPrice').value=client.price||0;
+            document.getElementById('startDate').value=client.startDate||getOffsetDate(0);
+            document.getElementById('endDate').value=client.endDate||'';
+            document.getElementById('subNotes').value=client.notes||'';
+            document.getElementById('modalTitle').innerText='تعديل بيانات الزبون والاشتراك';
+            openModal('clientModal');
+        }
+        async function renewSubscription(id) {
+            const client=clients.find(c=>String(c.id)===String(id));if(!client)return;
+            const oldEnd=client.endDate||'—';const currentEnd=new Date((client.endDate||getOffsetDate(0))+'T00:00:00'),today=new Date();today.setHours(0,0,0,0);const baseDate=currentEnd<today?today:currentEnd;baseDate.setMonth(baseDate.getMonth()+1);
+            const previous={...client}; client.startDate=getOffsetDate(0);client.endDate=getLocalDateString(baseDate);
+            try { await updateCloudClient(client); logActivity('renew',client,'تجديد الاشتراك لمدة شهر إضافي',oldEnd,client.endDate); localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));renderData();printRenewalReceipt(id); }
+            catch(error) { Object.assign(client,previous); alert(error.message || 'تعذر تجديد الاشتراك سحابياً.'); }
+        }
+        function printRenewalReceipt(id){
+            const c=clients.find(x=>String(x.id)===String(id));if(!c)return;
+            if(!c.lastRenewalReceipt){const issuedNow=new Date();c.lastRenewalReceipt={receiptNo:'NX-'+issuedNow.getFullYear()+String(issuedNow.getMonth()+1).padStart(2,'0')+String(issuedNow.getDate()).padStart(2,'0')+'-'+String(issuedNow.getTime()).slice(-6),issuedAt:issuedNow.toISOString()};localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));}const issued=new Date(c.lastRenewalReceipt.issuedAt),receiptNo=c.lastRenewalReceipt.receiptNo;
+            const plan=({monthly:'شهري',yearly:'سنوي',lifetime:'مدى الحياة',test3:'تجريبي - 3 أيام',test7:'تجريبي - 7 أيام'})[c.planType]||'اشتراك';
+            const esc=escapeHTML,price=Number(c.price||0).toLocaleString('en-US');
+            const w=window.open('','_blank','width=900,height=760');if(!w){alert('يرجى السماح بالنوافذ المنبثقة لطباعة وصل التجديد.');return;}
+            w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>وصل تجديد اشتراك - ${esc(receiptNo)}</title><style>*{box-sizing:border-box}body{margin:0;padding:34px;background:#eef1f5;color:#182230;font-family:Tahoma,Arial,sans-serif}.receipt{max-width:760px;margin:auto;background:#fff;border:1px solid #d7dce4;border-radius:16px;overflow:hidden;box-shadow:0 12px 36px #15223818}.top{padding:26px 32px;background:linear-gradient(120deg,#101827,#25354c);color:#fff;display:flex;align-items:center;gap:18px}.logo{width:76px;height:76px;flex:none}.brand h1{margin:0;font-size:25px;letter-spacing:1px}.brand p{margin:7px 0 0;color:#d8c18a;font-size:12px}.ribbon{background:#d9b66b;color:#172235;text-align:center;padding:10px;font-weight:bold;font-size:16px}.body{padding:28px 34px}.meta{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#566274;font-size:12px;margin-bottom:22px}.row{display:flex;justify-content:space-between;gap:20px;padding:14px 4px;border-bottom:1px solid #e8ebf0;font-size:14px}.row span:first-child{color:#667085}.row strong{color:#172235}.total{margin-top:20px;padding:17px 20px;background:#f6f2e8;border:1px solid #e7d6ad;border-radius:10px;display:flex;justify-content:space-between;font-weight:bold;font-size:18px}.status{display:inline-block;background:#e6f7ee;color:#087443;padding:5px 13px;border-radius:30px;font-size:12px}.foot{padding:20px 34px;border-top:1px solid #e8ebf0;display:flex;justify-content:space-between;align-items:end;color:#667085;font-size:11px}.sign{border-top:1px solid #9aa4b2;width:160px;text-align:center;padding-top:8px;margin-top:28px}@media print{body{padding:0;background:#fff}.receipt{box-shadow:none;border:0;border-radius:0;max-width:none}.top{-webkit-print-color-adjust:exact;print-color-adjust:exact}.ribbon,.total,.status{-webkit-print-color-adjust:exact;print-color-adjust:exact}} </style></head><body><article class="receipt"><header class="top"><svg class="logo" viewBox="0 0 128 128" aria-label="NEXUS"><path d="M64 4 112 22 105 77Q96 109 64 124Q32 109 23 77L16 22Z" fill="#101827" stroke="#d9b66b" stroke-width="4"/><path d="M57 45 12 30 34 60 18 65 54 78 64 96 74 78 110 65 94 60 116 30 71 45 64 25Z" fill="#d9b66b"/><path d="M64 27 48 49 54 75 64 91 74 75 80 49Z" fill="#eef2f7"/><path d="M68 43 94 47 76 58 66 52Z" fill="#d9b66b"/><path d="M46 20 54 10 64 16 74 10 82 20 64 27Z" fill="#d9b66b"/></svg><div class="brand"><h1>NEXUS ERP</h1><p>SMART BUSINESS MANAGEMENT SYSTEM</p><p>نظام إدارة الأعمال والاشتراكات الذكية</p></div></header><div class="ribbon">وصل إلكتروني رسمي لتجديد الاشتراك</div><section class="body"><div class="meta"><span>رقم الوصل: <b>${esc(receiptNo)}</b></span><span>تاريخ الإصدار: <b>${issued.toLocaleString('ar-IQ')}</b></span></div><div class="row"><span>اسم المشترك</span><strong>${esc(c.clientName||'—')}</strong></div><div class="row"><span>اسم الشركة / النشاط</span><strong>${esc(c.businessName||'—')}</strong></div><div class="row"><span>النظام المشترك به</span><strong>${esc(c.productName||'—')}</strong></div><div class="row"><span>نوع الاشتراك</span><strong>${esc(plan)}</strong></div><div class="row"><span>تاريخ التجديد</span><strong>${esc(c.startDate||'—')}</strong></div><div class="row"><span>تاريخ انتهاء الاشتراك</span><strong>${esc(c.endDate||'—')}</strong></div><div class="row"><span>حالة الاشتراك</span><strong><span class="status">${c.subscriptionStatus==='cancelled'?'ملغي':'فعال'}</span></strong></div><div class="total"><span>المبلغ المستلم</span><strong>$${price}</strong></div><div class="sign">إدارة NEXUS ERP</div></section><footer class="foot"><span>شكراً لثقتكم بنا — معاً نحو مستقبل رقمي أذكى</span><span>وثيقة إلكترونية صادرة من نظام NEXUS ERP</span></footer></article><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`);
+            w.document.close();
+        }
+        async function decreaseSubscription(id) {
+            const client=clients.find(c=>String(c.id)===String(id));if(!client)return;
+            if(client.planType==='lifetime'){alert('هذا الاشتراك مدى الحياة، ولا يمكن تقليله باستخدام زر تقليل شهر.');return}
+            if(!client.endDate){alert('لا يوجد تاريخ انتهاء صالح لهذا الاشتراك.');return}
+            if(!confirm(`هل تريد تقليل اشتراك (${client.businessName||client.clientName}) شهراً واحداً؟\nسيتم تغيير تاريخ الانتهاء من ${client.endDate} إلى تاريخ أسبق بشهر.`))return;
+            const parts=client.endDate.split('-').map(Number);if(parts.length!==3||parts.some(n=>!Number.isFinite(n))){alert('تاريخ انتهاء الاشتراك غير صالح.');return}
+            const oldEnd=client.endDate,year=parts[0],month=parts[1]-1,day=parts[2],target=new Date(year,month-1,1),lastDay=new Date(target.getFullYear(),target.getMonth()+1,0).getDate();target.setDate(Math.min(day,lastDay));const newEnd=getLocalDateString(target);
+            if(client.startDate&&newEnd<client.startDate){alert('لا يمكن تقليل الاشتراك لأن تاريخ الانتهاء الجديد سيكون قبل تاريخ بداية الاشتراك.');return}
+            client.endDate=newEnd; try { await updateCloudClient(client); logActivity('decrease',client,'تقليل الاشتراك شهراً واحداً',oldEnd,newEnd);localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));renderData();alert(`تم تقليل مدة الاشتراك شهراً واحداً. تاريخ الانتهاء الجديد: ${newEnd}`); } catch(error) { client.endDate=oldEnd; alert(error.message || 'تعذر تقليل الاشتراك سحابياً.'); }
+        }
+        async function cancelTestSubscription(id) {
+            const c=clients.find(x=>String(x.id)===String(id));
+            if(!c||!String(c.planType||'').startsWith('test')) return;
+            if(!confirm(`تأكيد إلغاء الاشتراك التجريبي للعميل (${c.businessName||c.clientName})؟`)) return;
+            const oldEnd=c.endDate;c.endDate=getOffsetDate(-1);c.subscriptionStatus='cancelled';c.trialCancelled=true;
+            try { await updateCloudClient(c); logActivity('cancel_trial',c,'إلغاء الاشتراك التجريبي',oldEnd,c.endDate); localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));renderData(); }
+            catch(error) { c.endDate=oldEnd; c.subscriptionStatus='active'; c.trialCancelled=false; alert(error.message || 'تعذر إلغاء الاشتراك التجريبي سحابياً.'); }
+        }
+        async function openAdminManagement(){
+            if(!isNexusSuperAdmin()){alert('هذه الصفحة متاحة لمسؤول النظام فقط.');return;}
+            openModal('adminManagementModal');
+            const list=document.getElementById('adminAccountsList');
+            list.innerHTML='<p class="text-gray-400">جارٍ تحميل الحسابات من الخادم...</p>';
+            try { const result=await nexusApi('list'); remoteEmployees=Array.isArray(result.employees)?result.employees:[]; renderAdminManagement(); }
+            catch(error){list.innerHTML=`<p class="text-cyber-red">${escapeHTML(error.message)}</p>`;}
+        }
+        async function saveAdminAccount(e){
+            e.preventDefault();if(!isNexusSuperAdmin())return;
+            const name=document.getElementById('newAdminName').value.trim();
+            const username=document.getElementById('newAdminUsername').value.trim();
+            const password=document.getElementById('newAdminPassword').value;
+            try {
+                await nexusApi('create',{display_name:name,username,password,role:'admin'});
+                document.getElementById('adminAccountForm').reset();
+                const result=await nexusApi('list');remoteEmployees=Array.isArray(result.employees)?result.employees:[];
+                renderAdminManagement();alert('تم إنشاء الحساب الإداري على الخادم بنجاح.');
+            } catch(error) { alert(error.message || 'تعذر إنشاء الحساب الإداري.'); }
+        }
+        async function toggleAdminAccount(id){
+            if(!isNexusSuperAdmin())return;
+            const employee=remoteEmployees.find(x=>String(x.user_id)===String(id));if(!employee)return;
+            try {
+                await nexusApi('set_active',{user_id:employee.user_id,active:employee.active===false});
+                const result=await nexusApi('list');remoteEmployees=Array.isArray(result.employees)?result.employees:[];
+                renderAdminManagement();
+            } catch(error) { alert(error.message || 'تعذر تغيير حالة الحساب.'); }
+        }
+        function deleteAdminAccount(id){
+            if(!isNexusSuperAdmin())return;
+            alert('الحذف النهائي للموظفين غير متاح في واجهة nexus-api المنشورة حالياً؛ لم يتم إجراء أي حذف.');
+        }
+        function renderAdminManagement(){
+            const list=document.getElementById('adminAccountsList');if(!list)return;
+            list.innerHTML=remoteEmployees.length?remoteEmployees.map(a=>`<div class="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-white/5 border border-white/10"><div><div class="text-white font-bold">${escapeHTML(a.display_name||'—')}</div><div class="text-gray-400 font-mono">${escapeHTML(a.username||'—')}</div><div class="${a.active===false?'text-cyber-red':'text-cyber-green'} text-[10px]">${a.active===false?'معطل':'فعال'} · ${escapeHTML(a.role||'')}</div></div><div class="flex items-center gap-2"><button onclick="toggleAdminAccount('${String(a.user_id).replace(/'/g,'')}')" class="px-3 py-1.5 rounded-lg border border-cyber-cyan/30 text-cyber-cyan">${a.active===false?'تفعيل':'تعطيل'}</button><button onclick="deleteAdminAccount('${String(a.user_id).replace(/'/g,'')}')" class="px-3 py-1.5 rounded-lg border border-cyber-red/40 text-cyber-red hover:bg-cyber-red/10">حذف</button></div></div>`).join(''):'<p class="text-gray-500">لا توجد حسابات إدارية إضافية.</p>';
+        }
+        async function deleteClient(id) {
+            const client=clients.find(c=>String(c.id)===String(id));
+            if(!client || !confirm('هل أنت متأكد من حذف هذا الزبون واشتراكه كلياً؟')) return;
+            try {
+                await nexusClientsRequest(`nexus_clients?id=eq.${encodeURIComponent(String(id))}`, { method:'DELETE', headers:{ Prefer:'return=minimal' } });
+                logActivity('delete',client,'حذف الزبون والاشتراك',`${client.clientName||''} | انتهاء: ${client.endDate||'—'}`,'تم الحذف');
+                clients=clients.filter(c=>String(c.id)!==String(id));localStorage.setItem('nexus_clients_v4',JSON.stringify(clients));renderData();
+            } catch(error) { alert(error.message || 'تعذر حذف الزبون. قد لا تملك صلاحية الحذف.'); }
+        }
+        function exportData() {
+            const blob=new Blob([JSON.stringify(clients,null,2)],{type:'application/json;charset=utf-8'});
+            const url=URL.createObjectURL(blob), a=document.createElement('a');
+            a.href=url; a.download=`NEXUS_Backup_${getOffsetDate(0)}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        }
+        function importData(event) {
+            const file=event.target.files[0]; if(!file)return;
+            const reader=new FileReader();
+            reader.onload=function(e) {
+                try {
+                    const imported=JSON.parse(e.target.result);
+                    if(Array.isArray(imported) && imported.every(c=>c && typeof c==='object' && 'id' in c && 'clientName' in c && 'endDate' in c)) {
+                        clients=imported; localStorage.setItem('nexus_clients_v4',JSON.stringify(clients)); renderData(); alert('تم استرجاع النسخة الاحتياطية بنجاح!');
+                    } else alert('ملف النسخة الاحتياطية غير صالح!');
+                } catch(err) { alert('خطأ أثناء قراءة ملف JSON!'); }
+                event.target.value='';
+            };
+            reader.readAsText(file);
+        }
+        function openModal(modalId) {
+            if(modalId==='clientModal' && !document.getElementById('clientId').value) {
+                document.getElementById('clientForm').reset(); document.getElementById('clientId').value='';
+                document.getElementById('customProductBox').classList.add('hidden');
+                document.getElementById('modalTitle').innerText='إضافة زبون واشتراك جديد';
+                document.getElementById('startDate').value=getOffsetDate(0); calculateDates();
+            }
+            document.getElementById(modalId).classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if(!document.querySelector('.fixed:not(.hidden)[id$=Modal]')) document.body.classList.remove('modal-open');
+        }
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')['activityLogModal','historyModal','clientModal','adminManagementModal'].forEach(id=>{const m=document.getElementById(id);if(m&&!m.classList.contains('hidden'))closeModal(id)})});
+    </script>
+    <div id="historyModal" class="hidden fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto modal-scroll">
+      <div class="glass-panel w-full max-w-3xl rounded-2xl p-5 sm:p-7 border border-cyber-cyan/40 my-auto">
+        <div class="flex items-center justify-between gap-3 border-b border-cyber-border pb-4 mb-4"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-clock-rotate-left text-cyber-cyan ml-2"></i>سجل تجديد الاشتراك</h3><p id="historyClientLabel" class="text-xs text-gray-400 mt-1"></p></div><button onclick="closeModal('historyModal')" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="overflow-x-auto"><table class="w-full text-right text-xs min-w-[600px]"><thead class="text-cyber-cyan bg-black/30"><tr><th class="p-3">الإجراء</th><th class="p-3">التاريخ والوقت</th><th class="p-3">قبل</th><th class="p-3">بعد</th><th class="p-3">المستخدم المنفذ</th></tr></thead><tbody id="subscriptionHistoryBody"></tbody></table></div><p id="historyEmpty" class="hidden text-center text-gray-400 text-sm py-8">لا توجد حركات اشتراك مسجلة لهذا الزبون حتى الآن.</p>
+        <div class="flex justify-end mt-5"><button onclick="closeModal('historyModal')" class="px-5 py-2 rounded-xl bg-white/10 text-gray-200 text-xs">إغلاق</button></div>
+      </div>
+    </div>
+    <div id="activityLogModal" class="hidden fixed inset-0 z-[70] flex items-start justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md overflow-y-auto modal-scroll">
+      <div class="glass-panel w-full max-w-6xl rounded-2xl p-4 sm:p-6 border border-cyber-cyan/40 my-auto">
+        <div class="flex items-center justify-between gap-3 border-b border-cyber-border pb-4 mb-4"><div><h3 class="text-lg font-bold text-white"><i class="fa-solid fa-clipboard-list text-cyber-cyan ml-2"></i>سجل النظام الكامل</h3><p class="text-xs text-gray-400 mt-1">سجل محلي مؤقت؛ مزامنته مع الخادم تتطلب إضافة عملية السجل إلى واجهة API.</p></div><button onclick="closeModal('activityLogModal')" class="text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4"><input id="logSearch" oninput="renderActivityLog()" placeholder="بحث بالإجراء أو الزبون أو التفاصيل..." class="bg-black/50 border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-white"><select id="logActionFilter" onchange="renderActivityLog()" class="bg-black/50 border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-white"><option value="all">كل الإجراءات</option><option value="login">تسجيل الدخول</option><option value="logout">تسجيل الخروج</option><option value="add">إضافة زبون</option><option value="edit">تعديل بيانات</option><option value="delete">حذف زبون</option><option value="renew">تجديد اشتراك</option><option value="decrease">تقليل اشتراك</option><option value="view_history">عرض سجل اشتراك</option></select><input id="logFromDate" type="date" onchange="renderActivityLog()" title="من تاريخ" class="bg-black/50 border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-white"><input id="logToDate" type="date" onchange="renderActivityLog()" title="إلى تاريخ" class="bg-black/50 border border-cyber-border rounded-xl px-3 py-2.5 text-xs text-white"></div>
+        <div class="flex items-center justify-between gap-3 mb-3"><span id="logCount" class="text-xs text-cyber-cyan"></span><button onclick="clearActivityFilters()" class="px-3 py-2 rounded-lg text-xs border border-cyber-cyan/30 text-cyber-cyan">مسح الفلاتر</button></div>
+        <div class="overflow-x-auto max-h-[55vh] overflow-y-auto rounded-xl border border-cyber-border/60"><table class="w-full text-right text-xs min-w-[780px]"><thead class="sticky top-0 bg-[#07111f] text-cyber-cyan"><tr><th class="p-3">التاريخ والوقت</th><th class="p-3">الإجراء</th><th class="p-3">الزبون</th><th class="p-3">التفاصيل</th><th class="p-3">المستخدم المنفذ</th></tr></thead><tbody id="activityLogBody"></tbody></table></div><p id="logEmpty" class="hidden text-center text-gray-400 text-sm py-8">لا توجد إجراءات تطابق الفلترة المحددة.</p>
+        <div class="flex justify-end mt-5"><button onclick="closeModal('activityLogModal')" class="px-5 py-2 rounded-xl bg-white/10 text-gray-200 text-xs">إغلاق</button></div>
+      </div>
+    </div>
+
+
+</body>
+</html>
